@@ -1,8 +1,9 @@
 const inquirer = require('inquirer');
 const db = require('./db/connection');
 const cTable = require('console.table');
+const chalk = require('chalk');
 const express = require('express');
-const { debugPort } = require('node:process');
+
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -54,7 +55,7 @@ function startPrompt() {
             'update employee managers',
             'delete departments', 
             'delete roles', 
-            'delete employees',
+            'delete employee',
             'view department utilized budget',
             'Exit'
         ]
@@ -117,7 +118,7 @@ function startPrompt() {
                 viewDeptBudget();
                 break;
             case 'Exit':
-                connection.end();
+                db.end();
                 break;
             default: console.log('not found');
 
@@ -163,29 +164,23 @@ function viewAllRoles() {
 // WHEN I choose to view all employees
 // THEN I am presented with a formatted table showing employee data, including employee ids, first names, last names, job titles, departments, salaries, and managers that the employees report to
 function viewAllEmployees() {
-    const sql = `
-    SELECT employee.id, 
-    employee.first_name, 
-    employee.last_name,  
-    roles.title AS Title,
-    department.department_name, 
-    roles.salary,
-    CONCAT(manager.first_name, ' ' ,manager.last_name) AS manager
-    FROM employee 
-    JOIN roles ON employee.role_id = roles.id
-    JOIN department ON roles.department_id = department.id
-    LEFT JOIN  employee AS manager ON employee.manager_id = manager.id`;
+    const sql = `SELECT employee.id, 
+                employee.first_name, 
+                employee.last_name,  
+                roles.title AS Title,
+                department.department_name, 
+                roles.salary,
+                CONCAT(manager.first_name, ' ' ,manager.last_name) AS manager
+                FROM employee 
+                JOIN roles ON employee.role_id = roles.id
+                JOIN department ON roles.department_id = department.id
+                LEFT JOIN  employee AS manager ON employee.manager_id = manager.id`;
 
-   
-    const params = []
-      db.query(sql, (err, result) => {
-          if(err) {
-              res.status(400).json({ error: err.message });
-              return;
-          }
-          console.table(result);
-          startPrompt();
-      });
+    db.query(sql, (err, result) => {
+        if(err) throw err;
+        console.table(result);
+        startPrompt();
+    });
 }
 
 //==================================== View All Employees By Manager ====================================//
@@ -202,7 +197,6 @@ function viewAllEmpByManager() {
             JOIN department ON roles.department_id = department.id
             LEFT JOIN  employee AS manager ON employee.manager_id = manager.id
             ORDER BY manager`;
-    const params = []
       db.query(sql, (err, result) => {
           if(err) {
               res.status(400).json({ error: err.message });
@@ -216,18 +210,17 @@ function viewAllEmpByManager() {
 //==================================== View All Employees By Department ====================================//
 function viewAllEmpByDept() {
     const sql = `SELECT employee.id, 
-    employee.first_name, 
-    employee.last_name,  
-    roles.title AS Title,
-    department.department_name, 
-    roles.salary,
-    CONCAT(manager.first_name, ' ' ,manager.last_name) AS manager
-    FROM employee 
-    JOIN roles ON employee.role_id = roles.id
-    JOIN department ON roles.department_id = department.id
-    LEFT JOIN  employee AS manager ON employee.manager_id = manager.id
-    ORDER BY department_name`;
-    const params = []
+                employee.first_name, 
+                employee.last_name,  
+                roles.title AS Title,
+                department.department_name, 
+                roles.salary,
+                CONCAT(manager.first_name, ' ' ,manager.last_name) AS manager
+                FROM employee 
+                JOIN roles ON employee.role_id = roles.id
+                JOIN department ON roles.department_id = department.id
+                LEFT JOIN  employee AS manager ON employee.manager_id = manager.id
+                ORDER BY department_name`;
       db.query(sql, (err, result) => {
           if(err) {
               res.status(400).json({ error: err.message });
@@ -312,9 +305,23 @@ function addRole() {
 // WHEN I choose to add an employee
 // THEN I am prompted to enter the employee’s first name, last name, role, and manager and that employee is added to the database
 function addEmployee() {
-    const addEmployeeSql = `SELECT * from roles;
-                            CONCAT (employee.first_name," ",employee.last_name) AS full_name 
-                            FROM employees`;
+    // 
+    const addEmployeeSql = `SELECT employee.id, 
+                            employee.first_name, 
+                            employee.last_name,  
+                            roles.title AS Title,
+                            department.department_name, 
+                            roles.salary,
+                            employee.first_name," ",employee.last_name) AS manager
+                            FROM employee 
+                            JOIN roles ON employee.role_id = roles.id
+                            JOIN department ON roles.department_id = department.id
+                            LEFT JOIN  employee AS manager ON employee.manager_id = manager.id
+                            ORDER BY department_name`;
+                            // `SELECT roles.title`;
+                            // CONCAT (employee.first_name," ",employee.last_name) AS full_name 
+                            // FROM employees
+                            // `;
     db.query(addEmployeeSql, (err, result) => { 
         inquirer.prompt([
             {
@@ -328,24 +335,24 @@ function addEmployee() {
                 message: "Enter their last name "
             },
             {
-                name: "role",
+                name: "title",
                 type: "list",
-                message: "Pick the employee's role? ",
+                message: "Pick the employee's title? ",
                 choices:  function () {
-                    let choiceArray = results[0].map(choice => choice.title);
+                    let choiceArray = result.map(choice => choice.title);
                     return choiceArray;
                 }
-            },
-            {
-                name: "manager",
-                type: "list",
-                message: "Pick the manager for this role",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.full_name);
-                    return choiceArray;
-                }    
-        
             }
+            // {
+            //     name: "manager",
+            //     type: "list",
+            //     message: "Pick the manager for this role",
+            //     choices: function () {
+            //         let choiceArray = result.map(choice => choice.manager);
+            //         return choiceArray;
+            //     }    
+        
+            // }
         ]).then(function (answer) {
             const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id) 
                         VALUES (${answer.first_name},${answer.last_name},
@@ -460,13 +467,13 @@ function deleteEmployee() {
                 message: 'Enter the Employee ID of the person to remove:'
             }
         ]).then((answer) => {
-            db.query(`DELETE FROM employees WHERE ?`, answer.id, (err,result) => {
+            db.query(`DELETE FROM employee WHERE ?`, answer.id, (err,result) => {
                 if (err) throw err;
-                console.table(result);
+                console.table(`SELECT * FROM employee`);
                 startPrompt();
-            })
+            });
             startPrompt();
-        })
+        });
         
     });
 }
