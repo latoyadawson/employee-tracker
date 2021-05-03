@@ -12,8 +12,8 @@ This is a content management system (CMS) that can be used to update employee's 
 
 
 ## Screenshot
-![screenshot of code](/assets/images/code.png)
-![screenshot of gift](/assets/images/employee-tracker.gif)
+![screenshot of code](/assets/Images/code.png)
+![screenshot of gift](/assets/Images/employee-tracker.gif)
 
 
 
