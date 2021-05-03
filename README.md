@@ -1,7 +1,7 @@
 # Employee Tracker
 
 ## Purpose
-This is a web application that can be used to write and save notes. 
+This is a content management system (CMS) that can be used to update employee's department, roles, and titles, and managers.
 
 ## Built with 
 * JavaScript
@@ -12,8 +12,8 @@ This is a web application that can be used to write and save notes.
 
 
 ## Screenshot
-![screenshot of code](/assets/images/vscode.png)
-![screenshot of notes](/assets/images/notes.png)
+![screenshot of code](/assets/images/code.png)
+![screenshot of gift](/assets/images/employee-tracker.gif)
 
 
 
@@ -48,5 +48,5 @@ THEN I am prompted to select an employee to update and their new role and this i
 
 
 ## Contribution
-Made with ❤️  by   Latoya Dawson
+Made with ❤️  by  Latoya Dawson
 
